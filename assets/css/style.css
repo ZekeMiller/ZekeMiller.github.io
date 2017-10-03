@@ -113,17 +113,18 @@ div#resume_div * {
 	padding-left: 5px;
 	position: relative;
 	bottom: 260px;
+	z-index: 0;
 
 }
 
 
 #top-section {
-	height: 230px;
+	height: 250px;
 }
 
 
 
-div#interests div {
+div div {
 	padding-left: 2em;
 }
 
@@ -135,9 +136,12 @@ div#interests ul {
 #navigation {
 	border: solid #505050;
 	margin-left: 2em;
-	padding-left: 1em;
-	width: 280px;
-	left: 30px;
+	padding-left: 2em;
+	width: 310px;
+	background: #272727;
+	position: relative;
+	z-index: 3;
+	left: -30px;
 }
 
 

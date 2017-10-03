@@ -30,9 +30,11 @@
 					</ul>
 				</li>
 
-				<li><a href=#resume>Resume</a></li>
+				<li><a href=#rubiks>Rubik's Cube Solver Project</a>
 
 				<li><a href=#education>Education</a></li>
+
+				<li><a href=#resume>Resume</a></li>
 
 				<li><a href=#personal_interests>Personal Interests</a></li>
 			</ul>
@@ -76,6 +78,36 @@
 				</p>
 		</div>
 
+
+		<h2 id="education">Education</h2>
+			<p class="block_indent_left_align">
+				2017-Current, Rochester Institute of Technology.  Computing Exploration.<br/>
+				Relevant Coursework: Computer Science I, Fundamentals of Computer Security, Web and Mobile I, Discrete Math for Computing.
+				<br/><br/>
+				2013-2017, Jersey Shore Senior High School, Jersey Shore, PA, 17740.  Weighted GPA 4.07.<br/>
+				Participated in Jersey Shore High School’s Varsity Tennis Team, Future Business Leaders of America (FBLA) chapter, Chess Club, Rubik’s Club, IT Club, Book Club and Outdoor Club.<br/>
+				Won many awards throughout my 4 years in FBLA, including several 1st placements at the state level, and both a 2nd and 4th placement at the national level.
+			</p>
+
+		<a href="http://github.com/ZekeMiller/rubiks-cube"><h2 id="rubiks">Rubik's Cube Solver Project</h2></a>
+			<div>
+				<p>
+					For several years now, 'cubing' has been a favorite hobby of mine.  I own several rubik's cubes, as well as quite a few similar puzzles, such as a 2x2x2, a 4x4x4, a 5x5x5, a pyraminx, and a megaminx.  In fact, I've started a rubik's cube related passion project.
+					It started as me trying to figure out how to store a rubik's cube state, and how to modify it in predictable ways (individual turns).  I then made a way for the program to recognize turns in <a href="https://ruwix.com/the-rubiks-cube/notation/">Standard Notation</a> as commands, perform them, and print the new cube position.
+				</p>
+				<p>
+					From there, I figured out how to map algorithm names to a string version of the list of names, so that the user can call an algorithm instead of individual moves.  The biggest hurdle so far has been adding the functionality for the program to solve the cube, and tell the user exactly what moves to do to solve it as well.  In order to compliment this, I added functionality for the user to input a scrambled cube, face by face, and on the condition that it is legally solvable, the program will solve it.  One of the toughest parts of letting a user submit data on their own was to  I have plans to add some verificatin to check whether or not the cube is solvable, and tell the user if they have inputted an illegal position. All of is be hosted at <a href="https://github.com/ZekeMiller/rubiks-cube">this GitHub page</a>.
+					My future plans for the project are to:
+					<div>
+						My future plans for the project are to:
+						<ol>
+							<li>Create a rendered visual representation (first 2d folded, later 3D) of the cube (with buttons to do moves)</li>
+							<li>Allow the user to use a color palette to input cube positions into the visual representation of the cube</li>
+						</ol>
+						I will likely continue to add to the project, as I quite enjoy rubik's cubes, programming, and learning, and this project combines all three.
+					</div>
+				</p>
+			</div>
 
 		<h2 id="resume">Résumé (<a href="assets/media/Resume.pdf">PDF</a>/<a href="resume.html">HTML</a>)</h2>
 
@@ -142,21 +174,6 @@
 				</p>
 			</div>
 
-
-
-		<h2 id="education">Education</h2>
-			<p class="block_indent_left_align">
-				2017-Current, Rochester Institute of Technology.  Computing Exploration.<br/>
-				Relevant Coursework: Computer Science I, Fundamentals of Computer Security, Web and Mobile I, Discrete Math for Computing.
-				<br/><br/>
-				2013-2017, Jersey Shore Senior High School, Jersey Shore, PA, 17740.  Weighted GPA 4.07.<br/>
-				Participated in Jersey Shore High School’s Varsity Tennis Team, Future Business Leaders of America (FBLA) chapter, Chess Club, Rubik’s Club, IT Club, Book Club and Outdoor Club.<br/>
-				Won many awards throughout my 4 years in FBLA, including several 1st placements at the state level, and both a 2nd and 4th placement at the national level.
-			</p>
-
-
-
-
 		<div id="interests">
 			<h2 id="personal_interests">Personal Interests</h2>
 			<div>
@@ -189,27 +206,9 @@
 						I've always been interested in computers, which is naturally why I am in a computing major.  My freshman year of high school, I saved my money, did my research and ended up building my own Desktop PC.  I have since maintained and upgraded the same<sup><a href="https://en.wikipedia.org/wiki/Ship_of_Theseus">?</a></sup> PC, toyed with it countless times (including a few times where I managed to break it and had to figure out what I screwed up).
 					</p>
 				</div>
-				<h3>Rubik's Cubes</h3>
-				<div>
-					<p>
-						I like a lot of other stuff besides Games and Computers, with one of the biggest ones being Rubik's cubes.  I own several rubik's cube, as well as quite a few similar puzzles, such as a 2x2x2, a 4x4x4, a 5x5x5, a pyraminx, and a megaminx.  In fact, I've started a rubik's cube related passion project.
-						It started as me trying to figure out how to store a rubik's cube state, and how to modify it in predictable ways (individual turns).  I then made a way for the program to recognize turns in <a href="https://ruwix.com/the-rubiks-cube/notation/">Standard Notation</a> as commands, perform them, and print the new cube position.  From there, I figured out how to map algorithm names to a string version of the list of names, so that the user can call an algorithm instead of individual moves.  All of this will be hosted at <a href="https://github.com/ZekeMiller/cubology">this GitHub page</a> once I have the time to figure out git.
-						My future plans for the project are to:
-					</p>
-						<div>
-							<ol>
-								<li>Create a system to accept new algorithms and save them into the algorithm map</li>
-								<li>Create a system to scramble the cube</li>
-								<li>Create a system to list which moves/algorithms should be used to solve the current cube state</li>
-								<li>Create a 3D visual representation of the cube (with buttons to do moves)</li>
-							</ol>
-						</div>
-					<p>
-						I will likely continue to add to the project, as I quite enjoy rubik's cubes, programming, and learning, and this project combines all three.
-					</p>
-				</div>
 			</div>
 		</div>
+
 		</div>
 
 	</body>
