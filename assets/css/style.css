@@ -1,0 +1,198 @@
+html, body {
+	height: 100%
+}
+
+
+body {
+	color: #c2b083;
+	background-color: #171717;
+	font-family: 'Arial', sans-serif;
+}
+
+
+
+h1 {
+	color: #736a4e;
+	font-size: 3em;
+	text-align: center;
+	margin-top: 2em;
+}
+
+
+
+h2 {
+	color: #998e68;
+	font-size: 2em;
+}
+
+
+
+h3 {
+	font-size: 1.5em;
+}
+
+
+p {
+	margin-left: 1em;
+	text-indent: 2em;
+}
+
+
+a:link {
+	color: #d9d0b4;
+	text-decoration: none;
+}
+
+
+a:visited {
+	color: #d2c9a8;
+}
+
+
+a:hover {
+	color: #f2efe6;
+	text-decoration: underline;
+}
+
+
+a:active {
+	color: #f8f7f2;
+}
+
+figcaption {
+	text-align: center;
+}
+
+
+.centered {
+	text-align: center;
+}
+
+
+.block_indent_left_align {
+	margin-left: 2em;
+	text-indent: 0;
+}
+
+
+.some_indentation {
+	margin-left: 3em;
+}
+
+
+.resume {
+	margin-left: 0;
+	text-indent: 0;
+	font-weight:normal;
+}
+
+
+div#resume_div * {
+	font-family: serif;
+	color: black;
+}
+
+#resume_div {
+	background-color: white;
+	border-style: solid;
+	border-color: #252525;
+	padding: 2em;
+	max-width: 800px;
+	margin: auto;
+}
+
+
+
+#school_picture {
+	float: right;
+	border-width: 5px;
+	border-style: solid;
+	border-color: #c2b083;
+	padding-top: 5px;
+	padding-right: 5px;
+	padding-left: 5px;
+
+}
+
+
+#top-section {
+	height: 230px;
+}
+
+
+
+div#interests div {
+	padding-left: 2em;
+}
+
+div#interests ul {
+	list-style-type: none;
+}
+
+
+#navigation {
+	border: solid #505050;
+	margin-left: 2em;
+	padding-left: 1em;
+	width: 280px;
+	left: 30px;
+}
+
+
+
+#content {
+	max-width: 1100px;
+	margin: 1px auto;
+	background-color: #252525;
+	padding: 1px 50px 50px 50px;
+	min-height: 100%;
+}
+
+
+
+#navbar {
+	padding: 0;
+	margin: 0;
+	list-style-type: none;
+	min-width: 730px;
+}
+
+
+ul#navbar > li {
+	display: inline;
+}
+
+
+ul#navbar li a {
+	float: left;
+	/*
+	background-color: #2525252;
+	color: #998e68;
+	text-decoration: none;
+	*/
+	padding-right: 1em;
+	padding-left: 1em;
+	margin-right: 0.3em;
+	margin-left: 0.3em;
+	border-right: solid;
+	border-left: solid;
+	border-bottom: solid;
+	padding-bottom: 0.4em;
+	border-color: #777;
+}
+
+
+ul#navbar li a:hover {
+	background-color: #444;
+	color: #d9d0b4;
+	text-decoration: none;1
+
+}
+
+
+#active {
+	padding-top: 0.4em;
+	padding-bottom: 0.6em;
+	background-color: #333;
+	color: #e2d0a3;
+}
