@@ -1,3 +1,4 @@
 RewriteEngine On
-RewriteRule ^/?check(/.*)$ http://github.com/ZekeMiller/check [L,R=301]
-Redirect 301 /test /resume
+RewriteCond %{HTTP_HOST} ^zekemiller\.com$ [OR]
+RewriteCond %{HTTP_HOST} ^www\.zekemiller\.com$
+RewriteRule ^check$ "http\:\/\/github\.com\/ZekeMiller\/check\/" [R=301,L] 
