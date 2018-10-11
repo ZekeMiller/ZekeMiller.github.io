@@ -1,4 +1,5 @@
+ErrorDocument 404 /index.html
 RewriteEngine On
 RewriteCond %{HTTP_HOST} ^zekemiller\.com$ [OR]
 RewriteCond %{HTTP_HOST} ^www\.zekemiller\.com$
-RewriteRule ^check$ "http\:\/\/github\.com\/ZekeMiller\/check\/" [R=301,L] 
+RewriteRule ^check$ "http\:\/\/github\.com\/ZekeMiller\/check\/" [R=302,L]
