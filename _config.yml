@@ -1,3 +1,5 @@
+name: Zeke Miller Personal Site
+
 plugins:  
     - jekyll-paginate
     - jekyll-redirect-from
