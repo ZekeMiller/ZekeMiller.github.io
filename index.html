@@ -1,121 +1,98 @@
----
-layout: default
-title: Zeke Miller Homepage
----
-<div id="content">
-	<h1>Ezekiel Miller Portfolio</h1>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Zeke Miller</title>
+<meta name="description" content="Zeke Miller's corner of the internet: small tools, games, and rankings.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%234f46e5'/><text x='50' y='68' font-size='56' text-anchor='middle' fill='white' font-family='system-ui' font-weight='700'>Z</text></svg>">
+<style>
+  :root {
+    color-scheme: dark;
+    --bg: #16171a; --card: #1f2125; --ink: #ecebe7; --muted: #9a9ca3; --line: #2e3036; --accent: #8b85ff;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; line-height: 1.55;
+  }
+  .wrap { max-width: 720px; margin: 0 auto; padding: 72px 24px 48px; }
+  h1 { font-size: 40px; letter-spacing: -0.02em; margin: 0; }
+  .intro { color: var(--muted); font-size: 18px; margin: 8px 0 48px; }
+  h2 {
+    font-size: 13px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted);
+    margin: 40px 0 12px; font-weight: 600;
+  }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; }
+  a.card {
+    display: flex; gap: 16px; align-items: center; padding: 16px; background: var(--card);
+    border: 1px solid var(--line); border-radius: 14px; color: inherit; text-decoration: none;
+    transition: transform .12s ease, border-color .12s ease, box-shadow .12s ease;
+  }
+  a.card:hover { transform: translateY(-2px); border-color: var(--accent); box-shadow: 0 6px 20px rgba(0,0,0,.06); }
+  a.card.soon { pointer-events: none; opacity: .6; }
+  .thumb {
+    flex: 0 0 64px; height: 64px; border-radius: 10px; background: var(--bg); border: 1px solid var(--line);
+    display: grid; place-items: center;
+  }
+  .card strong { display: block; font-size: 16px; }
+  .card span { display: block; color: var(--muted); font-size: 14px; }
+  .tag {
+    display: inline-block !important; font-size: 11px !important; font-weight: 600; color: var(--accent) !important;
+    border: 1px solid currentColor; border-radius: 999px; padding: 0 7px; margin-left: 6px; vertical-align: 2px;
+  }
+  ul.links { list-style: none; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: 10px; }
+  ul.links a {
+    display: inline-block; padding: 7px 14px; border: 1px solid var(--line); border-radius: 999px;
+    color: inherit; text-decoration: none; background: var(--card); font-size: 14px;
+  }
+  ul.links a:hover { border-color: var(--accent); }
+  footer { margin-top: 64px; color: var(--muted); font-size: 13px; }
+  footer a { color: inherit; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Zeke Miller</h1>
+  <p class="intro">Small tools, games, and opinions I made for myself and my friends.</p>
 
-	<div id="top-section">
-		<div id="navigation">
-			<h2>Navigation</h2>
-			<ul class="navigation">
+  <h2>Things I made</h2>
+  <div class="grid">
+    <a class="card" href="/alignment/">
+      <div class="thumb" aria-hidden="true">
+        <svg width="44" height="44" viewBox="0 0 44 44">
+          <line x1="22" y1="3" x2="22" y2="41" stroke="currentColor" stroke-width="2"/>
+          <line x1="3" y1="22" x2="41" y2="22" stroke="currentColor" stroke-width="2"/>
+          <rect x="6" y="8" width="12" height="6" rx="3" fill="#ffc9c9"/>
+          <rect x="26" y="12" width="13" height="6" rx="3" fill="#a5d8ff"/>
+          <rect x="9" y="28" width="11" height="6" rx="3" fill="#b2f2bb"/>
+          <rect x="27" y="31" width="10" height="6" rx="3" fill="#ffec99"/>
+        </svg>
+      </div>
+      <div>
+        <strong>Alignment Chart Maker</strong>
+        <span>Put your friends on a 2D chart, hide the axes, and make everyone guess.</span>
+      </div>
+    </a>
 
-				<li><a href=#site_purpose>Site Purpose</a></li>
+    <a class="card soon" href="#" aria-disabled="true">
+      <div class="thumb" aria-hidden="true" style="font-size:28px">🧩</div>
+      <div>
+        <strong>Thinky Games Ranking <span class="tag">soon</span></strong>
+        <span>My ranked list of puzzle games worth your brain.</span>
+      </div>
+    </a>
+  </div>
 
-				<li><a href=/resume>Resume</a></li>
+  <h2>Elsewhere</h2>
+  <ul class="links">
+    <li><a href="https://github.com/ZekeMiller">GitHub</a></li>
+    <li><a href="/archive/2019/">The 2019 version of this site 📼</a></li>
+  </ul>
 
-				<li><a href=#interests>Interests</a>
-					<ul class="sections">
-						<li><a href=#professional_interests>Professional Interests</a></li>
-						<li><a href=#personal_interests>Personal Interests</a></li>
-					</ul>
-				</li>
-
-				<li><a href=#check>Check</a></li>
-
-				<li><a href=#rubiks>Rubik's Cube Solver Project</a></li>
-
-				<!-- <li><a href=#euler>Project Euler Solutions</a></li> -->
-
-			</ul>
-		</div>
-		<figure id="school_picture">
-			<img src="/media/pic.jpg" alt="Picture of Me" height="200">
-			<figcaption>My Senior Year of High School Picture</figcaption>
-		</figure>
-	</div>
-
-	<h2 id="site_purpose">Site Purpose</h2>
-	<p>
-		The purpose of this site is to display my current HTML/CSS knowledge (<strong>NOT</strong> design ability), as well as listing my professional/personal interests, background, projects, and Résumé.
-	</p>
-
-	<h2 id="resume"><a href="/resume">Résumé (PDF)</a></h2>
-
-
-	<h2 id="interests">Interests</h2>
-	<div>
-		<h3 id="professional_interests">Professional Interests</h3>
-			<p>
-				I am interested in a software development, but a more long term goal of mine is to pursue a career in Artificial Intelligence/Machine Learning.  I've done research and coding in my spare time, and found that the lower level side of Computer Science really appeals to me.  I love sorting algorithms and other similarly common problems with a variety of solutions.  I enjoy optimization, and I like the idea of being able to code a computer to exhibit intelligence.  I don't want to abandon my current project (<a href=#check>Check</a>), but after I'm happy with the state of the app, I plan on working on some independent Artificial Intelligence projects.  I have a few ideas, mostly playing games since it's something a lot of people are very familiar with and has satisfying feedback with an easy comparison to something a human could perform.
-			</p>
-	</div>
-	<div>
-		<h3 id="personal_interests">Personal Interests</h3>
-		<div>
-			<h4>Games</h4>
-			<div>
-				<h5>Board/Tabletop Games</h5>
-				<div>
-					<p>
-						I enjoy lots of strategy and roleplaying games, such as Dungeons and Dragons, Chess, Catan, and Stratego.  One common board game that a lot of people seem to think I would like is monopoly, but I just don't enjoy it as much as other games that rely less on chance (except Dungeons and Dragons, but that's fun for the roleplaying).  It's for this reason that I really enjoy Chess.  I've recently started to take Chess more seriously, and play daily on lichess.org (both live games and tactics) to develop and maintain my skills.
-					</p>
-				</div>
-				<h5>Video Games</h5>
-				<div>
-					<p>
-						I also enjoy casually playing video games, ranging from action/shooter games such as Overwatch, to puzzlers, platformers, or even puzzle-platformers, such as Braid, LIMBO, INK, and the Portal games.  I've noticed that I like puzzlers and platformers more when playing a singleplayer game, but can play and enjoy anything with friends.
-					</p>
-				</div>
-				<h5>Sports</h5>
-				<div>
-					<p>
-						I have tried many sports, including baseball, basketball, soccer, tennis, cross country, and track and field, and have discovered two things.  The first is that I tend to really enjoy racquet/paddle sports, such as tennis, pickleball, racquetball, and ping-pong.  The second is that I like to play sports that I can have fun playing, with people that make it fun.  For example, I started out playing basketball for a local team, but didn't like it.  Years later I played a few times with co-workers that I am very close with, and had a fantastic time.  More recently, I have become a fan of playing broomball.  I have played intramural broomball every semester I've been on campus, and it's one of my regularly scheduled events on campus.
-					</p>
-				</div>
-			</div>
-			<h4>Computers (and stuff)</h4>
-			<div>
-				<p>
-					I've always been interested in computers, which is naturally why I am in a computing major.  My freshman year of high school, I saved my money, did my research and ended up building my own Desktop PC.  I have since maintained and upgraded the same<sup><a href="https://en.wikipedia.org/wiki/Ship_of_Theseus">maybe?</a></sup> PC, toyed with it countless times (including a few times where I managed to break it and had to figure out what I screwed up).
-				</p>
-			</div>
-		</div>
-	</div>
-
-	<h2 id="check"><a href="http://github.com/ZekeMiller/check">Check</a></h2>
-	<div>
-		<p>
-			Check is my current primary passion project.  It arose as a result of my desire to track as much of my own life as possible, my inability to find an app or service that did <em>exactly</em> what I wanted, and my absurd level of stubbornness.  I decided that if I couldn't find one app I really liked, I should take all the aspects of all the things I've used, along with a lot of my own ideas, and combine them into one app.  I figured it would be a good learning experience at the same time.  My goal is to be able to track:
-		</p>
-		<ul>
-			<li>
-				Habits, which are things you can do at any point, as many times a day as you want, such as "making a healthy diet decision".  The purpose of a Habit is that you can do it as often as you want.  Habits will have buttons for completion and failure.  You can build a streak (similar to Snapchat) of days in which you do a Habit at least once, as well as days that you fail.  The goal of course being to build up the success streak as long as possible and to not let a failure streak begin.
-			</li>
-			<li>
-				Dailies (which I need a new name for (possibly Repeats)), which are tasks that you want to complete on a regular schedule.  This could be daily, weekly, monthly, on mondays, every other day, at least 3 times within a week, etc.  I have a lot of plans for extremely flexible scheduling, since not all tasks are created equal (speaking of which, Tasks could be a good name for them).  The purpose of whatever I end up calling these things is that you build a routine and implement the desired behavior in your normal schedule.  I plan on also adding streaks to these.  A perfect sample would be daily meditation.
-			</li>
-			<li>
-				Datas (I know, the names get worse as I go.  I'm thinking of calling these Trackables), which are just things to put data into and graph easily.  I'm the least certain on my goals for these, I just know I want some way of visualizing data (such as time spent sleeping).
-			</li>
-		</ul>
-		<p>
-			I've implemented Habits, and both Dailies and Datas should go much more quickly now.  Unfortunately I am extremely busy this semester, so my rapid summer development pace has slowed dramatically.
-		</p>
-	</div>
-
-
-	<h2 id="rubiks"><a href="http://github.com/ZekeMiller/rubiks-cube">Rubik's Cube Solver Project</a></h2>
-	<div>
-		<p>
-			For several years now, 'cubing' has been a favorite hobby of mine.  I own several rubik's cubes, as well as quite a few similar puzzles, such as a 2x2x2, a 4x4x4, a 5x5x5, a pyraminx, and a megaminx.  In fact, I've started a rubik's cube related passion project.
-			It started as me trying to figure out how to store a rubik's cube state, and how to modify it in predictable ways (individual turns).  I then made a way for the program to recognize turns in <a href="https://ruwix.com/the-rubiks-cube/notation/">Standard Notation</a> as commands, perform them, and print the new cube position.
-		</p>
-		<p>
-			From there, I figured out how to map algorithm names to a string version of the list of names, so that the user can call an algorithm instead of individual moves.  The biggest hurdle so far has been adding the functionality for the program to solve the cube, and tell the user exactly what moves to do to solve it as well.  In order to compliment this, I added functionality for the user to input a scrambled cube, face by face, and on the condition that it is legally solvable, the program will solve it.  One of the toughest parts of letting a user submit data on their own was to map the data to the structure I used to store positions and colors.  I have plans to add some verification to check whether or not the cube is solvable, and tell the user if they have inputted an illegal position. The project is hosted at <a href="https://github.com/ZekeMiller/rubiks-cube">this GitHub page</a>.
-		</p>
-		<p>
-			The project is somewhat abandoned, as I don't think any worthwhile changes are available.  I wrote this project before I learned much of what I now know, including a lot of style decisions, as well as how to code in a language besides python.  Besides, I have more than enough other interests to continue making other projects, and leave this one how it is.
-		</p>
-	</div>
+  <footer>
+    © Zeke Miller · <a href="https://github.com/ZekeMiller/ZekeMiller.github.io">source</a>
+  </footer>
 </div>
+</body>
+</html>
