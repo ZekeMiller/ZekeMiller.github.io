@@ -415,16 +415,9 @@
   function startDrag(e, n, el) {
     if (e.button !== undefined && e.button !== 0) return;
     e.preventDefault();
-    // What moves is the item's point (the bubble's pointer tip); the bubble follows it.
-    // On the chart that's the stored position; in the tray it's just below the pill.
-    let ax0, ay0;
-    if (n.placed) {
-      const pb = plotBox(); ax0 = pb.l + n.x * pb.w; ay0 = pb.t + n.y * pb.h;
-    } else {
-      const r = el.getBoundingClientRect();
-      ax0 = r.left + r.width / 2; ay0 = r.bottom + (parseFloat(getComputedStyle(el).getPropertyValue('--tip')) || 7);
-    }
-    const offX = e.clientX - ax0, offY = e.clientY - ay0;
+    // What moves is the item's point (the bubble's pointer tip), and it sits exactly
+    // under the cursor; the bubble follows it.
+    const offX = 0, offY = 0;
     const sx = e.clientX, sy = e.clientY;
     let ghost = null;
 
