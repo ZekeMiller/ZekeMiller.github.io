@@ -94,23 +94,31 @@
   #boardWrap.hidden-axes .axis:not(.masked) { opacity: .45; }
 
   .chip {
+    --tip: 7px;
     display: inline-flex; align-items: center; gap: 4px;
-    padding: 4px 10px; border-radius: 999px; font-size: 14px; font-weight: 600;
-    color: #1f2328; border: 1px solid rgba(0,0,0,.12); box-shadow: 0 1px 2px rgba(0,0,0,.12);
+    padding: 5px 11px; border-radius: 999px; font-size: 15px; font-weight: 600;
+    background: var(--c); color: #1f2328; border: 1px solid rgba(0,0,0,.12); box-shadow: 0 1px 2px rgba(0,0,0,.12);
     cursor: grab; user-select: none; touch-action: none; white-space: nowrap;
   }
-  #plot .chip { position: absolute; transform: translate(-50%, -50%); z-index: 2; }
+  /* On the chart (and while dragging) items are speech bubbles: the tip of the
+     pointer is the item's exact position. */
+  #plot .chip, .chip.ghost { position: absolute; transform: translate(-50%, calc(-100% - var(--tip))); }
+  #plot .chip { z-index: 2; }
+  #plot .chip::after, .chip.ghost::after {
+    content: ""; position: absolute; left: 50%; top: 100%; transform: translateX(-50%);
+    border: var(--tip) solid transparent; border-top-color: var(--c); border-bottom: 0;
+  }
   .chip.selected { outline: 2px solid var(--accent); outline-offset: 1px; z-index: 3; }
   .chip.src { opacity: .25; }
   .chip.ghost {
-    position: fixed; z-index: 1000; pointer-events: none; transform: translate(-50%, -50%) scale(1.06);
+    position: fixed; z-index: 1000; pointer-events: none;
     box-shadow: 0 6px 18px rgba(0,0,0,.5); cursor: grabbing;
   }
   .chip .x {
     display: none; border: 0; background: rgba(0,0,0,.12); color: inherit; border-radius: 50%;
     width: 16px; height: 16px; padding: 0; font-size: 11px; line-height: 16px; text-align: center;
   }
-  .chip:hover .x, .chip.selected .x { display: inline-block; }
+  .chip.selected .x { display: inline-block; }
   .chip.ghost .x { display: none; }
 
   #toast {
@@ -158,7 +166,7 @@
     .axis { font-size: 13px; }
     .axis.top { top: 22px; } .axis.bottom { top: calc(100% - 22px); }
     .axis.left { left: 22px; } .axis.right { left: calc(100% - 22px); }
-    .chip { font-size: 12px; padding: 3px 8px; }
+    .chip { font-size: 13px; padding: 3px 9px; --tip: 6px; }
     header h1 { display: none; }
     .dlg-body { flex-direction: column; }
     .dlg-opts { width: 100%; }
@@ -300,9 +308,15 @@
     toast(`Added ${list.length} item${list.length > 1 ? 's' : ''}`);
   }
   function removeName(id) {
-    state.names = state.names.filter(n => n.id !== id);
+    const index = state.names.findIndex(n => n.id === id);
+    if (index < 0) return;
+    const [removed] = state.names.splice(index, 1);
     if (selectedId === id) selectedId = null;
     commit();
+    toast(`Removed “${removed.text}”`, 'Undo', () => {
+      state.names.splice(Math.min(index, state.names.length), 0, removed);
+      commit();
+    }, 6000);
   }
   function renameName(n) {
     const t = prompt('Rename', n.text);
@@ -313,7 +327,7 @@
   function chipEl(n) {
     const el = document.createElement('div');
     el.className = 'chip' + (n.id === selectedId ? ' selected' : '');
-    el.style.background = PALETTE[n.color % PALETTE.length];
+    el.style.setProperty('--c', PALETTE[n.color % PALETTE.length]);
     const label = document.createElement('span'); label.textContent = n.text; el.append(label);
     const x = document.createElement('button'); x.className = 'x'; x.textContent = '×'; x.title = 'Remove';
     x.addEventListener('pointerdown', e => e.stopPropagation());
@@ -367,8 +381,10 @@
   function startDrag(e, n, el) {
     if (e.button !== undefined && e.button !== 0) return;
     e.preventDefault();
+    // Track the bubble's anchor (the tip of its pointer), which sits just below the bubble.
     const r = el.getBoundingClientRect();
-    const offX = e.clientX - (r.left + r.width / 2), offY = e.clientY - (r.top + r.height / 2);
+    const tip = parseFloat(getComputedStyle(el).getPropertyValue('--tip')) || 7;
+    const offX = e.clientX - (r.left + r.width / 2), offY = e.clientY - (r.bottom + tip);
     const sx = e.clientX, sy = e.clientY;
     let ghost = null;
 
@@ -376,6 +392,7 @@
       if (!ghost) {
         if (Math.hypot(ev.clientX - sx, ev.clientY - sy) < 4) return;
         ghost = el.cloneNode(true); ghost.classList.add('ghost'); ghost.classList.remove('selected');
+        ghost.style.left = ghost.style.top = '';
         document.body.append(ghost); el.classList.add('src');
       }
       const cx = ev.clientX - offX, cy = ev.clientY - offY;
@@ -526,17 +543,24 @@
     g.save(); g.translate(pad / 2, y0 + w / 2); g.rotate(-Math.PI / 2); g.fillText(lbl('left'), 0, 0, maxW); g.restore();
     g.save(); g.translate(S - pad / 2, y0 + w / 2); g.rotate(Math.PI / 2); g.fillText(lbl('right'), 0, 0, maxW); g.restore();
 
-    g.font = font(600, 32);
+    // Speech-bubble items: the tip of the pointer is the item's exact position.
+    g.font = font(600, 35);
+    const ph = 56, tip = 14;
     for (const n of state.names.filter(n => n.placed)) {
-      const tw = g.measureText(n.text).width, ph = 50, pw = tw + 40;
-      const cx = x0 + n.x * w, cy = y0 + n.y * w;
+      const pw = g.measureText(n.text).width + 44;
+      const ax = x0 + n.x * w, ay = y0 + n.y * w;          // anchor (tip)
+      const bx = ax - pw / 2, by = ay - tip - ph;           // bubble top-left
+      const color = PALETTE[n.color % PALETTE.length];
+      const tri = (lift) => { g.beginPath(); g.moveTo(ax - tip, by + ph - lift); g.lineTo(ax + tip, by + ph - lift); g.lineTo(ax, ay); g.closePath(); };
       g.save();
       g.shadowColor = T.shadow; g.shadowBlur = 6; g.shadowOffsetY = 2;
-      roundRect(g, cx - pw / 2, cy - ph / 2, pw, ph, ph / 2);
-      g.fillStyle = PALETTE[n.color % PALETTE.length]; g.fill();
+      g.fillStyle = color;
+      roundRect(g, bx, by, pw, ph, ph / 2); g.fill();
+      tri(0); g.fill();
       g.restore();
-      g.strokeStyle = 'rgba(0,0,0,.12)'; g.lineWidth = 2; roundRect(g, cx - pw / 2, cy - ph / 2, pw, ph, ph / 2); g.stroke();
-      g.fillStyle = '#1f2328'; g.fillText(n.text, cx, cy + 1);
+      g.strokeStyle = 'rgba(0,0,0,.12)'; g.lineWidth = 2; roundRect(g, bx, by, pw, ph, ph / 2); g.stroke();
+      g.fillStyle = color; tri(3); g.fill();                // cover the outline where the pointer joins
+      g.fillStyle = '#1f2328'; g.fillText(n.text, ax, by + ph / 2 + 1);
     }
     return c;
   }
