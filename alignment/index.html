@@ -98,15 +98,25 @@
     display: inline-flex; align-items: center; gap: 4px;
     padding: 5px 11px; border-radius: 999px; font-size: 15px; font-weight: 600;
     background: var(--c); color: #1f2328; border: 1px solid rgba(0,0,0,.12); box-shadow: 0 1px 2px rgba(0,0,0,.12);
-    cursor: grab; user-select: none; touch-action: none; white-space: nowrap;
+    cursor: grab; user-select: none; touch-action: none; white-space: nowrap; max-width: 100%;
   }
-  /* On the chart (and while dragging) items are speech bubbles: the tip of the
-     pointer is the item's exact position. */
-  #plot .chip, .chip.ghost { position: absolute; transform: translate(-50%, calc(-100% - var(--tip))); }
+  .chip > span { overflow: hidden; text-overflow: ellipsis; }
+  /* On the chart (and while dragging) items are speech bubbles. The tip of the
+     pointer is the item's exact position; JS (placeBubble) keeps the bubble body
+     inside the chart, flipping it below the point near the top edge and sliding
+     the pointer along the body near the side edges. */
+  #plot .chip, .chip.ghost {
+    position: absolute; white-space: normal; width: max-content; max-width: 180px; text-align: center; line-height: 1.2;
+    border-radius: 14px;
+  }
+  #plot .chip > span, .chip.ghost > span { overflow: visible; overflow-wrap: anywhere; }
   #plot .chip { z-index: 2; }
   #plot .chip::after, .chip.ghost::after {
-    content: ""; position: absolute; left: 50%; top: 100%; transform: translateX(-50%);
+    content: ""; position: absolute; left: var(--tipx, 50%); top: 100%; transform: translateX(-50%);
     border: var(--tip) solid transparent; border-top-color: var(--c); border-bottom: 0;
+  }
+  #plot .chip.below::after, .chip.ghost.below::after {
+    top: auto; bottom: 100%; border-top: 0; border-bottom: var(--tip) solid var(--c);
   }
   .chip.selected { outline: 2px solid var(--accent); outline-offset: 1px; z-index: 3; }
   .chip.src { opacity: .25; }
@@ -167,6 +177,7 @@
     .axis.top { top: 22px; } .axis.bottom { top: calc(100% - 22px); }
     .axis.left { left: 22px; } .axis.right { left: calc(100% - 22px); }
     .chip { font-size: 13px; padding: 3px 9px; --tip: 6px; }
+    #plot .chip, .chip.ghost { max-width: 120px; }
     header h1 { display: none; }
     .dlg-body { flex-direction: column; }
     .dlg-opts { width: 100%; }
@@ -328,6 +339,7 @@
     const el = document.createElement('div');
     el.className = 'chip' + (n.id === selectedId ? ' selected' : '');
     el.style.setProperty('--c', PALETTE[n.color % PALETTE.length]);
+    el.dataset.id = n.id;
     const label = document.createElement('span'); label.textContent = n.text; el.append(label);
     const x = document.createElement('button'); x.className = 'x'; x.textContent = '×'; x.title = 'Remove';
     x.addEventListener('pointerdown', e => e.stopPropagation());
@@ -362,12 +374,34 @@
     tray.replaceChildren();
     for (const n of state.names) {
       const el = chipEl(n);
-      if (n.placed) {
-        el.style.left = (n.x * 100) + '%';
-        el.style.top = (n.y * 100) + '%';
-        plot.append(el);
-      } else tray.append(el);
+      if (n.placed) { plot.append(el); placeOnPlot(el, n); }
+      else tray.append(el);
     }
+  }
+
+  // Inner box of the plot (inside its border) in viewport coordinates.
+  function plotBox() {
+    const r = plot.getBoundingClientRect();
+    return { l: r.left + plot.clientLeft, t: r.top + plot.clientTop, w: plot.clientWidth, h: plot.clientHeight };
+  }
+  function placeOnPlot(el, n) {
+    const W = plot.clientWidth, H = plot.clientHeight;
+    placeBubble(el, n.x * W, n.y * H, { l: 0, t: 0, r: W, b: H });
+  }
+  // Position a bubble so its pointer tip is at (ax, ay) while its body stays inside
+  // bounds b. Near the top it flips below the point; near the sides the body slides
+  // over and the pointer moves along the body to keep pointing at the exact spot.
+  function placeBubble(el, ax, ay, b) {
+    const tip = parseFloat(getComputedStyle(el).getPropertyValue('--tip')) || 7;
+    const w = el.offsetWidth, h = el.offsetHeight;
+    const edge = Math.min(w / 2, 10 + tip);              // keep the pointer off the rounded corners
+    let left = Math.min(Math.max(ax - w / 2, b.l), b.r - w);
+    left = Math.min(Math.max(left, ax - w + edge), ax - edge);
+    const below = ay - tip - h < b.t;
+    el.classList.toggle('below', below);
+    el.style.left = left + 'px';
+    el.style.top = (below ? ay + tip : ay - tip - h) + 'px';
+    el.style.setProperty('--tipx', (ax - left) + 'px');
   }
   function line(dir, pct) {
     const d = document.createElement('div');
@@ -381,10 +415,16 @@
   function startDrag(e, n, el) {
     if (e.button !== undefined && e.button !== 0) return;
     e.preventDefault();
-    // Track the bubble's anchor (the tip of its pointer), which sits just below the bubble.
-    const r = el.getBoundingClientRect();
-    const tip = parseFloat(getComputedStyle(el).getPropertyValue('--tip')) || 7;
-    const offX = e.clientX - (r.left + r.width / 2), offY = e.clientY - (r.bottom + tip);
+    // What moves is the item's point (the bubble's pointer tip); the bubble follows it.
+    // On the chart that's the stored position; in the tray it's just below the pill.
+    let ax0, ay0;
+    if (n.placed) {
+      const pb = plotBox(); ax0 = pb.l + n.x * pb.w; ay0 = pb.t + n.y * pb.h;
+    } else {
+      const r = el.getBoundingClientRect();
+      ax0 = r.left + r.width / 2; ay0 = r.bottom + (parseFloat(getComputedStyle(el).getPropertyValue('--tip')) || 7);
+    }
+    const offX = e.clientX - ax0, offY = e.clientY - ay0;
     const sx = e.clientX, sy = e.clientY;
     let ghost = null;
 
@@ -392,12 +432,15 @@
       if (!ghost) {
         if (Math.hypot(ev.clientX - sx, ev.clientY - sy) < 4) return;
         ghost = el.cloneNode(true); ghost.classList.add('ghost'); ghost.classList.remove('selected');
-        ghost.style.left = ghost.style.top = '';
         document.body.append(ghost); el.classList.add('src');
       }
       const cx = ev.clientX - offX, cy = ev.clientY - offY;
-      ghost.style.left = cx + 'px'; ghost.style.top = cy + 'px';
-      plot.classList.toggle('over', inside(plot, cx, cy, 6));
+      const overPlot = inside(plot, cx, cy, 6);
+      const pb = plotBox();
+      placeBubble(ghost, cx, cy, overPlot
+        ? { l: pb.l, t: pb.t, r: pb.l + pb.w, b: pb.t + pb.h }
+        : { l: 0, t: 0, r: innerWidth, b: innerHeight });
+      plot.classList.toggle('over', overPlot);
       tray.classList.toggle('over', inside(tray, ev.clientX, ev.clientY, 0));
     };
     const end = ev => {
@@ -410,15 +453,16 @@
         selectedId = n.id;
         document.querySelectorAll('.chip.selected').forEach(c => c.classList.remove('selected'));
         el.classList.add('selected');
+        if (n.placed) placeOnPlot(el, n);   // the × button widens the bubble
         return;
       }
       ghost.remove();
       const cx = ev.clientX - offX, cy = ev.clientY - offY;
       if (ev.type !== 'pointercancel') {
         if (inside(plot, cx, cy, 6)) {
-          const pr = plot.getBoundingClientRect();
-          n.x = clamp((cx - pr.left) / pr.width);
-          n.y = clamp((cy - pr.top) / pr.height);
+          const pb = plotBox();
+          n.x = clamp((cx - pb.l) / pb.w);
+          n.y = clamp((cy - pb.t) / pb.h);
           n.placed = true;
         } else if (inside(tray, ev.clientX, ev.clientY, 0) || n.placed) {
           n.placed = false;
@@ -543,26 +587,55 @@
     g.save(); g.translate(pad / 2, y0 + w / 2); g.rotate(-Math.PI / 2); g.fillText(lbl('left'), 0, 0, maxW); g.restore();
     g.save(); g.translate(S - pad / 2, y0 + w / 2); g.rotate(Math.PI / 2); g.fillText(lbl('right'), 0, 0, maxW); g.restore();
 
-    // Speech-bubble items: the tip of the pointer is the item's exact position.
-    g.font = font(600, 35);
-    const ph = 56, tip = 14;
+    // Speech-bubble items, laid out with the same rules as on screen (see placeBubble):
+    // the pointer tip is the exact position, the body stays inside the plot, flips
+    // below the point near the top, and long names wrap.
+    const fs = 35, lineH = 42, padX = 22, padY = 10, tip = 14, radius = 28, maxTextW = 420;
+    g.font = font(600, fs);
     for (const n of state.names.filter(n => n.placed)) {
-      const pw = g.measureText(n.text).width + 44;
-      const ax = x0 + n.x * w, ay = y0 + n.y * w;          // anchor (tip)
-      const bx = ax - pw / 2, by = ay - tip - ph;           // bubble top-left
+      const lines = wrapLines(g, n.text, maxTextW);
+      const pw = Math.max(...lines.map(l => g.measureText(l).width)) + padX * 2;
+      const ph = lines.length * lineH + padY * 2;
+      const ax = x0 + n.x * w, ay = y0 + n.y * w;          // the item's exact point
+      const edge = Math.min(pw / 2, radius + tip);
+      let bx = Math.min(Math.max(ax - pw / 2, x0), x0 + w - pw);
+      bx = Math.min(Math.max(bx, ax - pw + edge), ax - edge);
+      const below = ay - tip - ph < y0;
+      const by = below ? ay + tip : ay - tip - ph;
+      const baseY = below ? by : by + ph;                  // where the pointer meets the body
+      const inward = below ? 1 : -1;
       const color = PALETTE[n.color % PALETTE.length];
-      const tri = (lift) => { g.beginPath(); g.moveTo(ax - tip, by + ph - lift); g.lineTo(ax + tip, by + ph - lift); g.lineTo(ax, ay); g.closePath(); };
+      const tri = (lift) => { g.beginPath(); g.moveTo(ax - tip, baseY + inward * lift); g.lineTo(ax + tip, baseY + inward * lift); g.lineTo(ax, ay); g.closePath(); };
+      const r = Math.min(radius, ph / 2);
       g.save();
       g.shadowColor = T.shadow; g.shadowBlur = 6; g.shadowOffsetY = 2;
       g.fillStyle = color;
-      roundRect(g, bx, by, pw, ph, ph / 2); g.fill();
+      roundRect(g, bx, by, pw, ph, r); g.fill();
       tri(0); g.fill();
       g.restore();
-      g.strokeStyle = 'rgba(0,0,0,.12)'; g.lineWidth = 2; roundRect(g, bx, by, pw, ph, ph / 2); g.stroke();
+      g.strokeStyle = 'rgba(0,0,0,.12)'; g.lineWidth = 2; roundRect(g, bx, by, pw, ph, r); g.stroke();
       g.fillStyle = color; tri(3); g.fill();                // cover the outline where the pointer joins
-      g.fillStyle = '#1f2328'; g.fillText(n.text, ax, by + ph / 2 + 1);
+      g.fillStyle = '#1f2328';
+      lines.forEach((l, i) => g.fillText(l, bx + pw / 2, by + padY + lineH * (i + 0.5) + 1));
     }
     return c;
+  }
+  // Greedy word wrap; a single word longer than maxW is broken by characters.
+  function wrapLines(g, text, maxW) {
+    const lines = [];
+    let cur = '';
+    for (const word of text.split(/\s+/)) {
+      const tryLine = cur ? cur + ' ' + word : word;
+      if (g.measureText(tryLine).width <= maxW) { cur = tryLine; continue; }
+      if (cur) lines.push(cur);
+      cur = '';
+      for (const ch of word) {
+        if (g.measureText(cur + ch).width > maxW && cur) { lines.push(cur); cur = ''; }
+        cur += ch;
+      }
+    }
+    if (cur) lines.push(cur);
+    return lines.length ? lines : [''];
   }
   function roundRect(g, x, y, w, h, r) {
     g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r);
@@ -638,6 +711,12 @@
     if (!e.target.closest('.chip') && selectedId) { selectedId = null; render(); }
   });
   window.addEventListener('hashchange', loadFromHash);
+  window.addEventListener('resize', () => {
+    for (const el of plot.querySelectorAll('.chip')) {
+      const n = state.names.find(x => x.id === el.dataset.id);
+      if (n) placeOnPlot(el, n);
+    }
+  });
 
   render();
   loadFromHash();
