@@ -573,6 +573,7 @@
     if (scale) renderScale(); else renderTiers();
     const placed = placedIds();
     tray.replaceChildren(...state.items.filter(i => !placed.has(i.id)).map(chipEl));
+    syncHash();
   }
 
   // ---------- drag ----------
@@ -737,15 +738,24 @@
     try { await navigator.clipboard.writeText(url); toast('Link copied'); }
     catch { prompt('Copy this link:', url); }
   }
+  // #tiers / #scale in the address bar picks the mode, so each mode has its own link.
+  // A #c=… share link takes over the hash until it has been loaded.
+  const modeFromHash = () => (location.hash.match(/^#(tiers|scale)$/) || [])[1];
+  function syncHash() {
+    if (/^#c=/.test(location.hash) || location.hash === '#' + state.mode) return;
+    history.replaceState(null, '', location.pathname + location.search + '#' + state.mode);
+  }
   async function loadFromHash() {
+    const mode = modeFromHash();
+    if (mode) { if (mode !== state.mode) { state.mode = mode; selectedId = null; commit(); } return; }
     const m = location.hash.match(/^#c=(.+)$/);
-    if (!m) return;
+    if (!m) { syncHash(); return; }
     try {
       const incoming = await decode(m[1]);
       const hadOwn = state.items.length || state.title;
       if (hadOwn) localStorage.setItem(BACKUP_KEY, JSON.stringify(state));
       state = incoming;
-      history.replaceState(null, '', location.pathname);
+      history.replaceState(null, '', location.pathname + '#' + state.mode);
       commit();
       if (hadOwn) toast('Opened a shared list.', 'Restore my old list', restoreBackup, 8000);
     } catch (err) {
@@ -985,6 +995,8 @@
   window.addEventListener('hashchange', loadFromHash);
   window.addEventListener('resize', layoutScale);
 
+  const startMode = modeFromHash();
+  if (startMode) state.mode = startMode;
   render();
   loadFromHash();
 })();
