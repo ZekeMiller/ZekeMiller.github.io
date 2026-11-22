@@ -1,0 +1,993 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tier List Maker</title>
+<meta name="description" content="Sort things into custom tiers, or place them anywhere on a scale from one extreme to the other, then share it.">
+<style>
+  :root {
+    color-scheme: dark; --bg: #16171a; --panel: #1f2125; --ink: #ecebe7; --muted: #9a9ca3;
+    --line: #2e3036; --accent: #6d64f5; --accent-ink: #fff; --row: #1a1b1f;
+    --radius: 12px;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg); color: var(--ink);
+    display: flex; flex-direction: column;
+  }
+  header {
+    display: flex; align-items: center; gap: 12px; padding: 10px 16px;
+    border-bottom: 1px solid var(--line); background: var(--panel);
+  }
+  header a.home { color: var(--muted); text-decoration: none; font-size: 14px; }
+  header h1 { font-size: 16px; margin: 0; white-space: nowrap; }
+  #title {
+    flex: 1; font: inherit; font-size: 18px; font-weight: 600; border: 1px solid transparent;
+    background: transparent; color: inherit; padding: 6px 8px; border-radius: 8px; min-width: 0;
+  }
+  #title:hover, #title:focus { border-color: var(--line); outline: none; background: var(--bg); }
+  header #newBtn { flex-shrink: 0; }
+
+  main { flex: 1; display: flex; gap: 16px; padding: 16px; min-height: 0; }
+  aside {
+    width: 300px; flex-shrink: 0; display: flex; flex-direction: column; gap: 14px;
+    overflow-y: auto;
+  }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px; }
+  .card h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin: 0 0 8px; }
+  .card[hidden] { display: none; }
+  textarea {
+    width: 100%; min-height: 90px; resize: vertical; font: inherit; font-size: 14px; background: var(--bg); color: var(--ink);
+    border: 1px solid var(--line); border-radius: 8px; padding: 8px;
+  }
+  button, select {
+    font: inherit; font-size: 14px; border: 1px solid var(--line); background: var(--panel);
+    color: var(--ink); padding: 7px 10px; border-radius: 8px; cursor: pointer;
+  }
+  button:hover { background: var(--bg); }
+  button.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+  button.primary:hover { filter: brightness(1.1); }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 8px; }
+  .row > button { flex: 1; }
+  label.check { display: flex; gap: 8px; align-items: center; font-size: 14px; margin-top: 8px; cursor: pointer; }
+  .hint { font-size: 12px; color: var(--muted); margin-top: 6px; line-height: 1.4; }
+
+  .seg { display: flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+  .seg label, .seg button { flex: 1; text-align: center; padding: 7px 12px; font-size: 14px; cursor: pointer; border: 0; border-radius: 0; background: transparent; }
+  .seg input { position: absolute; opacity: 0; pointer-events: none; }
+  .seg label:has(input:checked), .seg button.on { background: var(--accent); color: var(--accent-ink); }
+  .seg label:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: -2px; }
+  header .seg { flex-shrink: 0; }
+
+  #tray {
+    min-height: 70px; display: flex; flex-wrap: wrap; gap: 6px; align-content: flex-start;
+    border: 2px dashed var(--line); border-radius: 10px; padding: 8px; transition: background .15s;
+  }
+  #tray.over { background: rgba(109,100,245,.14); border-color: var(--accent); }
+  #tray:empty::before { content: "Items you haven't placed yet show up here."; color: var(--muted); font-size: 13px; }
+
+  #stage { flex: 1; min-width: 0; min-height: 0; overflow: auto; }
+  #board { max-width: 1100px; margin: 0 auto; }
+
+  /* ---------- tiers ---------- */
+  .tier {
+    display: flex; min-height: 76px; background: var(--panel); border: 1px solid var(--line);
+    border-radius: 10px; overflow: hidden; margin-bottom: 6px;
+  }
+  .tlabel {
+    flex: 0 0 120px; display: flex; align-items: center; justify-content: center; padding: 8px;
+    background: var(--tc); color: #1f2328;
+  }
+  .tname {
+    width: 100%; text-align: center; font-weight: 800; font-size: 20px; line-height: 1.15;
+    overflow-wrap: anywhere; outline: none; border-radius: 6px; padding: 2px 4px; cursor: text; min-height: 1.2em;
+  }
+  .tname:focus { background: rgba(255,255,255,.45); }
+  .tzone {
+    flex: 1; min-width: 0; display: flex; flex-wrap: wrap; gap: 6px; align-content: center; align-items: center;
+    padding: 10px; background: var(--row); transition: background .15s;
+  }
+  .tzone.over { background: rgba(109,100,245,.14); }
+  .tctl {
+    flex: 0 0 auto; display: flex; flex-direction: column; justify-content: center; gap: 2px; padding: 4px;
+    opacity: 0; transition: opacity .15s;
+  }
+  .tier:hover .tctl, .tier:focus-within .tctl { opacity: 1; }
+  .tctl button, .tctl .swatch {
+    width: 28px; height: 22px; padding: 0; font-size: 13px; line-height: 20px; border-radius: 6px;
+    display: grid; place-items: center; border: 1px solid var(--line); background: var(--panel); color: var(--muted); cursor: pointer;
+  }
+  .tctl button:hover { color: var(--ink); }
+  .tctl .swatch { background: var(--tc); position: relative; overflow: hidden; }
+  .tctl .swatch input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; border: 0; padding: 0; }
+  .addTier { width: 100%; border-style: dashed; color: var(--muted); }
+
+  /* ---------- continuous scale ---------- */
+  .scalewrap {
+    background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px 28px 14px;
+  }
+  .szone { position: relative; min-height: 180px; transition: background .15s; border-radius: 8px; }
+  .szone.over { background: rgba(109,100,245,.08); }
+  .sline {
+    position: absolute; left: 0; right: 0; bottom: 34px; height: 3px; border-radius: 2px; background: #c9cbd1;
+  }
+  .sline::before, .sline::after {
+    content: ""; position: absolute; top: 50%; width: 0; height: 0; border: 7px solid transparent; transform: translateY(-50%);
+  }
+  .sline::before { right: 100%; border-right-color: #c9cbd1; border-left: 0; }
+  .sline::after { left: 100%; border-left-color: #c9cbd1; border-right: 0; }
+  .tick { position: absolute; bottom: 28px; width: 1px; height: 15px; background: #3a3d44; transform: translateX(-.5px); }
+  .tick.mid { height: 21px; bottom: 25px; background: #50535b; }
+  .stem { position: absolute; width: 2px; background: var(--c); opacity: .75; transform: translateX(-1px); pointer-events: none; }
+  .dot {
+    position: absolute; bottom: 35.5px; width: 12px; height: 12px; border-radius: 50%; background: var(--c);
+    border: 2px solid var(--panel); transform: translate(-50%, 50%); pointer-events: none;
+  }
+  .stem.src, .dot.src { opacity: .25; }
+  .szone .chip { position: absolute; max-width: 200px; z-index: 2; }
+  .szone .chip.selected { z-index: 3; }
+  #guide { position: absolute; top: 0; bottom: 30px; width: 2px; background: var(--accent); transform: translateX(-1px); display: none; pointer-events: none; }
+  .sempty {
+    position: absolute; left: 0; right: 0; top: 40%; text-align: center; color: var(--muted); font-size: 13px; pointer-events: none; padding: 0 12px;
+  }
+  .ends { display: flex; justify-content: space-between; gap: 16px; margin-top: 2px; }
+  .endlabel {
+    width: 45%; font: inherit; font-size: 17px; font-weight: 700; color: var(--ink); background: transparent;
+    border: 1px solid transparent; border-radius: 6px; padding: 4px 6px;
+  }
+  .endlabel.right { text-align: right; }
+  .endlabel:hover, .endlabel:focus { border-color: var(--line); background: var(--bg); outline: none; }
+  .endlabel::placeholder { color: #5b5e66; font-weight: 500; }
+  div.slot { width: 4px; height: 30px; border-radius: 2px; background: var(--accent); flex-shrink: 0; }
+
+  /* ---------- chips ---------- */
+  .chip {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 5px 11px; border-radius: 999px; font-size: 15px; font-weight: 600;
+    background: var(--c); color: #1f2328; border: 1px solid rgba(0,0,0,.12); box-shadow: 0 1px 2px rgba(0,0,0,.12);
+    cursor: grab; user-select: none; touch-action: none; white-space: nowrap; max-width: 100%;
+  }
+  .chip > span { overflow: hidden; text-overflow: ellipsis; }
+  .chip.selected { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .chip.src { opacity: .25; }
+  .chip.ghost {
+    position: fixed; z-index: 1000; pointer-events: none; margin: 0;
+    box-shadow: 0 6px 18px rgba(0,0,0,.5); cursor: grabbing;
+  }
+  .chip .x {
+    display: none; border: 0; background: rgba(0,0,0,.12); color: inherit; border-radius: 50%;
+    width: 16px; height: 16px; padding: 0; font-size: 11px; line-height: 16px; text-align: center;
+  }
+  .chip.selected .x { display: inline-block; }
+  .chip.ghost .x { display: none; }
+  body.dragging, body.dragging * { cursor: grabbing !important; }
+
+  #toast {
+    position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%) translateY(20px);
+    background: #2e3036; color: #fff; padding: 10px 14px; border-radius: 10px; font-size: 14px;
+    opacity: 0; pointer-events: none; transition: all .2s; z-index: 2000; display: flex; gap: 10px; align-items: center;
+  }
+  #toast.show { opacity: 1; transform: translateX(-50%); pointer-events: auto; }
+  #toast button { background: transparent; color: #a5b4fc; border: 0; padding: 0; font-weight: 600; }
+
+  #exportDlg {
+    width: min(880px, calc(100vw - 32px)); max-height: calc(100vh - 32px); padding: 0;
+    background: var(--panel); color: var(--ink); border: 1px solid var(--line); border-radius: var(--radius);
+    box-shadow: 0 20px 60px rgba(0,0,0,.5);
+  }
+  #exportDlg::backdrop { background: rgba(0,0,0,.6); }
+  .dlg-head { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid var(--line); }
+  .dlg-head h2 { font-size: 16px; margin: 0; }
+  .dlg-close { border: 0; background: transparent; font-size: 22px; line-height: 1; padding: 2px 8px; color: var(--muted); }
+  .dlg-body { display: flex; gap: 20px; padding: 16px; }
+  .preview {
+    flex: 1; min-width: 0; display: flex; align-items: center; justify-content: center;
+    background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 12px;
+  }
+  .preview img { max-width: 100%; max-height: calc(100vh - 180px); display: block; border-radius: 4px; box-shadow: 0 2px 10px rgba(0,0,0,.4); }
+  .dlg-opts { width: 240px; flex-shrink: 0; display: flex; flex-direction: column; }
+  .opt-label { font-size: 13px; color: var(--muted); margin: 0 0 6px; }
+  .dlg-actions { margin-top: auto; padding-top: 20px; display: flex; flex-direction: column; gap: 8px; }
+
+  @media (hover: none) { .tctl { opacity: 1; } }
+  @media (max-width: 820px) {
+    main { flex-direction: column; overflow-y: auto; }
+    aside { width: 100%; order: 2; overflow: visible; }
+    #stage { order: 1; flex: none; overflow: visible; }
+    .tlabel { flex-basis: 80px; }
+    .tname { font-size: 16px; }
+    .tctl { opacity: 1; }
+    .chip { font-size: 13px; padding: 3px 9px; }
+    .scalewrap { padding: 16px 18px 10px; }
+    .szone .chip { max-width: 130px; }
+    .endlabel { font-size: 15px; }
+    header h1 { display: none; }
+    .dlg-body { flex-direction: column; }
+    .dlg-opts { width: 100%; }
+    .preview img { max-height: 45vh; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <a class="home" href="/">←</a>
+  <h1>Tier List</h1>
+  <input id="title" placeholder="Untitled list (click to name it)" maxlength="80">
+  <div class="seg" role="group" aria-label="Mode">
+    <button id="modeTiers" data-mode="tiers">Tiers</button>
+    <button id="modeScale" data-mode="scale">Scale</button>
+  </div>
+  <button id="newBtn" title="Clear everything and start over">New</button>
+</header>
+
+<main>
+  <aside>
+    <div class="card">
+      <h2>Add items</h2>
+      <textarea id="namesInput" placeholder="One per line, or comma-separated&#10;Pizza&#10;Tacos, Sushi, Ramen"></textarea>
+      <div class="row">
+        <button class="primary" id="addBtn">Add to tray</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Tray</h2>
+      <div id="tray"></div>
+      <div class="hint">Drag items onto the board, and drag them back here to unplace. Double-click an item to rename it. Select it and press Delete to remove it.</div>
+      <div class="row">
+        <button id="unplaceBtn">Move all back to tray</button>
+      </div>
+    </div>
+
+    <div class="card" id="tiersCard">
+      <h2>Tiers</h2>
+      <div class="row" style="margin-top:0">
+        <select id="presetSel" style="flex:1" aria-label="Tier preset">
+          <option value="">Use a preset…</option>
+        </select>
+      </div>
+      <div class="hint">Click a tier's name to rename it. Hover a row to recolor, move, or delete it. Items in deleted tiers go back to the tray.</div>
+    </div>
+
+    <div class="card" id="scaleCard">
+      <h2>Scale</h2>
+      <div class="hint" style="margin-top:0">Drop items anywhere on the line between the two ends, and how far apart they are counts. Click either end's label to change it, for example “Worst” to “Best” or “Cozy” to “Chaotic”. Crowded items stack up but still point to their exact spot.</div>
+    </div>
+
+    <div class="card">
+      <h2>Share</h2>
+      <div class="row" style="margin-top:0">
+        <button class="primary" id="linkBtn">Copy link</button>
+        <button id="exportBtn">Export image…</button>
+      </div>
+    </div>
+  </aside>
+
+  <section id="stage">
+    <div id="board"></div>
+  </section>
+</main>
+
+<dialog id="exportDlg" aria-labelledby="exportTitle">
+  <div class="dlg-head">
+    <h2 id="exportTitle">Export image</h2>
+    <button class="dlg-close" id="exportClose" aria-label="Close">×</button>
+  </div>
+  <div class="dlg-body">
+    <div class="preview"><img id="exportPreview" alt="Preview of the exported image"></div>
+    <div class="dlg-opts">
+      <div class="opt-label">Background</div>
+      <div class="seg" role="radiogroup" aria-label="Image background">
+        <label><input type="radio" name="exportTheme" value="light"> Light</label>
+        <label><input type="radio" name="exportTheme" value="dark"> Dark</label>
+      </div>
+      <div class="dlg-actions">
+        <button class="primary" id="copyImgBtn">Copy image</button>
+        <button id="pngBtn">Download PNG</button>
+      </div>
+    </div>
+  </div>
+</dialog>
+
+<div id="toast"><span id="toastMsg"></span><button id="toastAction"></button></div>
+
+<script>
+(() => {
+  const KEY = 'tier-list-v1';
+  const BACKUP_KEY = 'tier-list-v1-backup';
+  const PALETTE = ['#ffc9c9','#ffd8a8','#ffec99','#b2f2bb','#96f2d7','#a5d8ff','#bac8ff','#eebefa','#fcc2d7','#d8f5a2','#c5f6fa','#e9ecef'];
+  const RAMP = ['#ff7f7f','#ffbf7f','#ffdf7f','#ffff7f','#bfff7f','#7fff7f','#7fffff'];
+  const EXTRA = ['#7fbfff','#bf7fff','#ff7fbf','#d0d0d0'];
+  const PRESETS = [
+    { name: 'S, A, B, C, D, F', tiers: ['S','A','B','C','D','F'] },
+    { name: 'S, A, B, C, D', tiers: ['S','A','B','C','D'] },
+    { name: 'Love it → Hate it', tiers: ['Love it','Like it','It’s fine','Dislike','Hate it'] },
+    { name: '5 stars → 1 star', tiers: ['★★★★★','★★★★','★★★','★★','★'] },
+    { name: 'Must try → Skip', tiers: ['Must try','Worth it','Maybe','Skip'] },
+    { name: 'Yes / Maybe / No', tiers: ['Yes','Maybe','No'] },
+  ];
+
+  const $ = s => document.querySelector(s);
+  const board = $('#board'), tray = $('#tray');
+  const uid = () => Math.random().toString(36).slice(2, 10);
+  const isColor = c => /^#[0-9a-f]{6}$/i.test(c);
+  const clamp = v => Math.min(1, Math.max(0, v));
+
+  function rampColors(n) {
+    if (n <= 1) return [RAMP[0]];
+    return Array.from({ length: n }, (_, i) => RAMP[Math.round(i * (RAMP.length - 1) / (n - 1))]);
+  }
+  function presetTiers(labels) {
+    const colors = rampColors(labels.length);
+    return labels.map((label, i) => ({ id: uid(), label, color: colors[i], items: [] }));
+  }
+  function blank() {
+    return { title: '', mode: 'tiers', items: [], nextColor: 0,
+      tiers: presetTiers(PRESETS[0].tiers), scale: { left: 'Worst', right: 'Best', pos: {} } };
+  }
+  function load() {
+    try {
+      const s = JSON.parse(localStorage.getItem(KEY));
+      if (!s || !s.items || !s.tiers) return null;
+      // Earlier test version kept an ordered list; spread it evenly along the line instead.
+      if (!s.scale) {
+        const ids = (s.rank && s.rank.items) || [];
+        s.scale = { left: 'Worst', right: 'Best', pos: {} };
+        ids.forEach((id, i) => s.scale.pos[id] = ids.length > 1 ? 1 - i / (ids.length - 1) : 0.5);
+        delete s.rank;
+      }
+      s.mode = s.mode === 'tiers' ? 'tiers' : 'scale';
+      return s;
+    } catch { return null; }
+  }
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch {} }
+  function commit() { save(); render(); }
+
+  let state = load() || blank();
+  let selectedId = null;
+
+  const item = id => state.items.find(i => i.id === id);
+  function placedIds() {
+    return new Set(state.mode === 'scale' ? Object.keys(state.scale.pos) : state.tiers.flatMap(t => t.items));
+  }
+  // Remove an item from the current mode's board (it goes back to the tray).
+  function unplace(id) {
+    if (state.mode === 'scale') delete state.scale.pos[id];
+    else for (const t of state.tiers) t.items = t.items.filter(x => x !== id);
+  }
+  function snapshot() { return JSON.stringify(state); }
+  function undoTo(snap) { return () => { state = JSON.parse(snap); commit(); }; }
+
+  // ---------- items ----------
+  function parseNames(text) {
+    const seen = new Set(state.items.map(n => n.text.toLowerCase()));
+    const out = [];
+    for (const raw of text.split(/[\n,;\t]+/)) {
+      const t = raw.trim().slice(0, 40);
+      if (!t || seen.has(t.toLowerCase())) continue;
+      seen.add(t.toLowerCase()); out.push(t);
+    }
+    return out;
+  }
+  function addNames() {
+    const list = parseNames($('#namesInput').value);
+    if (!list.length) { toast('No new items to add'); return; }
+    for (const text of list) state.items.push({ id: uid(), text, color: state.nextColor++ % PALETTE.length });
+    $('#namesInput').value = '';
+    commit();
+    toast(`Added ${list.length} item${list.length > 1 ? 's' : ''}`);
+  }
+  function removeItem(id) {
+    const it = item(id);
+    if (!it) return;
+    const snap = snapshot();
+    state.items = state.items.filter(x => x.id !== id);
+    for (const t of state.tiers) t.items = t.items.filter(x => x !== id);
+    delete state.scale.pos[id];
+    if (selectedId === id) selectedId = null;
+    commit();
+    toast(`Removed “${it.text}”`, 'Undo', undoTo(snap), 6000);
+  }
+  function renameItem(it) {
+    const t = prompt('Rename', it.text);
+    if (t && t.trim()) { it.text = t.trim().slice(0, 40); commit(); }
+  }
+
+  // ---------- tiers ----------
+  function addTier() {
+    const used = new Set(state.tiers.map(t => t.color));
+    const color = [...RAMP, ...EXTRA].find(c => !used.has(c)) || EXTRA[EXTRA.length - 1];
+    state.tiers.push({ id: uid(), label: 'New tier', color, items: [] });
+    commit();
+    const names = board.querySelectorAll('.tname');
+    const last = names[names.length - 1];
+    if (last) { last.focus(); document.getSelection().selectAllChildren(last); }
+  }
+  function moveTier(i, d) {
+    const j = i + d;
+    if (j < 0 || j >= state.tiers.length) return;
+    [state.tiers[i], state.tiers[j]] = [state.tiers[j], state.tiers[i]];
+    commit();
+  }
+  function deleteTier(i) {
+    const snap = snapshot();
+    const [t] = state.tiers.splice(i, 1);
+    commit();
+    toast(`Deleted tier “${t.label || 'untitled'}”`, 'Undo', undoTo(snap), 6000);
+  }
+  function applyPreset(p) {
+    const snap = snapshot();
+    const old = state.tiers;
+    state.tiers = presetTiers(p.tiers);
+    // keep items in the same row position where that row still exists
+    state.tiers.forEach((t, i) => { if (old[i]) t.items = old[i].items; });
+    commit();
+    toast(`Tiers set to ${p.name}`, 'Undo', undoTo(snap), 6000);
+  }
+
+  // ---------- render ----------
+  function chipEl(it) {
+    const el = document.createElement('div');
+    el.className = 'chip' + (it.id === selectedId ? ' selected' : '');
+    el.style.setProperty('--c', PALETTE[it.color % PALETTE.length]);
+    el.dataset.id = it.id;
+    el.title = it.text;
+    const label = document.createElement('span'); label.textContent = it.text; el.append(label);
+    const x = document.createElement('button'); x.className = 'x'; x.textContent = '×'; x.title = 'Remove';
+    x.addEventListener('pointerdown', e => e.stopPropagation());
+    x.addEventListener('click', e => { e.stopPropagation(); removeItem(it.id); });
+    el.append(x);
+    el.addEventListener('pointerdown', e => startDrag(e, it, el));
+    el.addEventListener('dblclick', () => renameItem(it));
+    return el;
+  }
+  function btn(text, title, fn) {
+    const b = document.createElement('button'); b.textContent = text; b.title = title; b.setAttribute('aria-label', title);
+    b.onclick = fn; return b;
+  }
+
+  function renderTiers() {
+    state.tiers.forEach((t, i) => {
+      const row = document.createElement('div'); row.className = 'tier';
+      row.style.setProperty('--tc', t.color);
+
+      const lab = document.createElement('div'); lab.className = 'tlabel';
+      const name = document.createElement('div'); name.className = 'tname';
+      try { name.contentEditable = 'plaintext-only'; } catch { name.contentEditable = 'true'; }
+      if (name.contentEditable !== 'plaintext-only') name.contentEditable = 'true';
+      name.spellcheck = false;
+      name.textContent = t.label;
+      name.setAttribute('aria-label', 'Tier name');
+      name.addEventListener('input', () => { t.label = name.textContent.slice(0, 40); save(); });
+      name.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === 'Escape') { e.preventDefault(); name.blur(); } });
+      name.addEventListener('blur', () => { if (name.textContent !== t.label) name.textContent = t.label; });
+      lab.append(name);
+
+      const zone = document.createElement('div'); zone.className = 'zone tzone'; zone.dataset.zone = 't:' + t.id;
+      for (const id of t.items) { const it = item(id); if (it) zone.append(chipEl(it)); }
+
+      const ctl = document.createElement('div'); ctl.className = 'tctl';
+      const sw = document.createElement('label'); sw.className = 'swatch'; sw.title = 'Tier color';
+      const ci = document.createElement('input'); ci.type = 'color'; ci.value = t.color; ci.setAttribute('aria-label', 'Tier color');
+      ci.addEventListener('input', () => { t.color = ci.value; row.style.setProperty('--tc', t.color); save(); });
+      sw.append(ci);
+      ctl.append(sw, btn('↑', 'Move tier up', () => moveTier(i, -1)), btn('↓', 'Move tier down', () => moveTier(i, 1)),
+        btn('×', 'Delete tier', () => deleteTier(i)));
+
+      row.append(lab, zone, ctl);
+      board.append(row);
+    });
+    const add = btn('+ Add tier', 'Add tier', addTier); add.className = 'addTier';
+    board.append(add);
+  }
+
+  // ---------- continuous scale ----------
+  // Items sit at an exact spot on the line (0 = left end, 1 = right end). Bubbles are
+  // stacked into rows above the line so they never overlap; each keeps a stem down to its spot.
+  const STEM = 22, LANE_GAP = 8, CHIP_GAP = 6, LINE_Y = 35.5;
+  let scaleEntries = [], szone = null;
+
+  // Greedy row packing: sort by position, put each bubble in the lowest row it fits in.
+  function assignLanes(entries, W, gap) {
+    const ends = [];
+    for (const e of [...entries].sort((a, b) => a.px - b.px)) {
+      e.left = Math.min(Math.max(e.px - e.w / 2, 0), Math.max(0, W - e.w));
+      let lane = ends.findIndex(end => end + gap <= e.left);
+      if (lane < 0) { lane = ends.length; ends.push(0); }
+      ends[lane] = e.left + e.w;
+      e.lane = lane;
+    }
+    return ends.length;
+  }
+
+  function renderScale() {
+    const wrap = document.createElement('div'); wrap.className = 'scalewrap';
+    szone = document.createElement('div'); szone.className = 'zone szone'; szone.dataset.zone = 's';
+    for (let i = 0; i <= 10; i++) {
+      const t = document.createElement('div'); t.className = 'tick' + (i === 5 ? ' mid' : '');
+      t.style.left = (i * 10) + '%'; szone.append(t);
+    }
+    const line = document.createElement('div'); line.className = 'sline'; szone.append(line);
+    const guide = document.createElement('div'); guide.id = 'guide'; szone.append(guide);
+    scaleEntries = [];
+    for (const [id, x] of Object.entries(state.scale.pos)) {
+      const it = item(id); if (!it) continue;
+      const c = PALETTE[it.color % PALETTE.length];
+      const stem = document.createElement('div'); stem.className = 'stem'; stem.style.setProperty('--c', c);
+      const dot = document.createElement('div'); dot.className = 'dot'; dot.style.setProperty('--c', c);
+      const chip = chipEl(it);
+      szone.append(stem, dot, chip);
+      scaleEntries.push({ id, x, chip, stem, dot });
+    }
+    if (!scaleEntries.length) {
+      const e = document.createElement('div'); e.className = 'sempty';
+      e.textContent = 'Drag items from the tray onto the line. Drop them anywhere between the two ends.';
+      szone.append(e);
+    }
+    const ends = document.createElement('div'); ends.className = 'ends';
+    const endInput = (k, ph) => {
+      const inp = document.createElement('input'); inp.className = 'endlabel ' + k; inp.maxLength = 60;
+      inp.placeholder = ph; inp.value = state.scale[k]; inp.setAttribute('aria-label', ph);
+      inp.addEventListener('input', () => { state.scale[k] = inp.value; save(); });
+      return inp;
+    };
+    ends.append(endInput('left', 'Left end (e.g. Worst)'), endInput('right', 'Right end (e.g. Best)'));
+    wrap.append(szone, ends);
+    board.append(wrap);
+    layoutScale();
+  }
+
+  function layoutScale() {
+    if (!szone || !szone.isConnected) return;
+    const W = szone.clientWidth;
+    let chipH = 0;
+    for (const e of scaleEntries) {
+      e.px = e.x * W; e.w = e.chip.offsetWidth; chipH = Math.max(chipH, e.chip.offsetHeight);
+    }
+    const lanes = assignLanes(scaleEntries, W, CHIP_GAP);
+    const H = Math.max(180, 24 + lanes * (chipH + LANE_GAP) + STEM + LINE_Y + 6);
+    szone.style.height = H + 'px';
+    const axisY = H - LINE_Y;
+    for (const e of scaleEntries) {
+      const top = axisY - STEM - chipH - e.lane * (chipH + LANE_GAP);
+      e.chip.style.left = e.left + 'px';
+      e.chip.style.top = top + 'px';
+      e.stem.style.left = e.px + 'px';
+      e.stem.style.top = (top + chipH / 2) + 'px';
+      e.stem.style.height = (axisY - top - chipH / 2) + 'px';
+      e.dot.style.left = e.px + 'px';
+    }
+  }
+
+  function render() {
+    $('#title').value = state.title;
+    for (const b of document.querySelectorAll('header .seg button')) b.classList.toggle('on', b.dataset.mode === state.mode);
+    const scale = state.mode === 'scale';
+    $('#tiersCard').hidden = scale;
+    $('#scaleCard').hidden = !scale;
+    board.replaceChildren();
+    szone = null;
+    if (scale) renderScale(); else renderTiers();
+    const placed = placedIds();
+    tray.replaceChildren(...state.items.filter(i => !placed.has(i.id)).map(chipEl));
+  }
+
+  // ---------- drag ----------
+  // Find the drop zone under a point. The whole tier row counts, not just the
+  // strip the chips sit in. For the scale, only the line area counts (not the end labels).
+  function zoneAt(x, y) {
+    const hit = document.elementFromPoint(x, y);
+    if (!hit) return null;
+    if (hit.closest('#tray')) return tray;
+    const tier = hit.closest('.tier');
+    if (tier) return tier.querySelector('.tzone');
+    if (szone && szone.isConnected) {
+      const r = szone.getBoundingClientRect();
+      if (x >= r.left - 24 && x <= r.right + 24 && y >= r.top && y <= r.bottom) return szone;
+    }
+    return null;
+  }
+  function zoneChildren(zone) {
+    return [...zone.children].filter(c => !c.classList.contains('slot') && !c.classList.contains('src'));
+  }
+  // Index to insert at, counted among the zone's items with the dragged one left out.
+  function indexAt(zone, x, y) {
+    const kids = zoneChildren(zone);
+    for (let i = 0; i < kids.length; i++) {
+      const r = kids[i].getBoundingClientRect();
+      if (y < r.top || (y <= r.bottom && x < r.left + r.width / 2)) return i;
+    }
+    return kids.length;
+  }
+  let slot = null;
+  function showSlot(zone, idx) {
+    if (zone === tray || zone === szone) { clearSlot(); return; }
+    if (!slot) { slot = document.createElement('div'); slot.className = 'slot'; }
+    const kids = zoneChildren(zone);
+    const before = kids[idx] || null;
+    if (slot.parentNode !== zone || slot.nextElementSibling !== before) zone.insertBefore(slot, before);
+  }
+  function clearSlot() { if (slot) slot.remove(); slot = null; }
+
+  function startDrag(e, it, el) {
+    if (e.button !== undefined && e.button !== 0) return;
+    e.preventDefault();
+    const sx = e.clientX, sy = e.clientY;
+    const r0 = el.getBoundingClientRect();
+    const ox = sx - r0.left, oy = sy - r0.top;
+    const entry = scaleEntries.find(e => e.chip === el);
+    const guide = $('#guide');
+    let ghost = null, over = null, idx = 0, frac = 0.5;
+
+    const move = ev => {
+      if (!ghost) {
+        if (Math.hypot(ev.clientX - sx, ev.clientY - sy) < 4) return;
+        ghost = el.cloneNode(true); ghost.classList.add('ghost'); ghost.classList.remove('selected');
+        ghost.style.width = r0.width + 'px';
+        document.body.append(ghost); document.body.classList.add('dragging');
+        el.classList.add('src');
+        if (entry) { entry.stem.classList.add('src'); entry.dot.classList.add('src'); }
+      }
+      const z = zoneAt(ev.clientX, ev.clientY);
+      if (over && over !== z) over.classList.remove('over');
+      over = z;
+      if (z && z === szone) {
+        // On the scale the cursor picks the exact spot; the bubble hangs above it, centred.
+        const r = szone.getBoundingClientRect();
+        frac = clamp((ev.clientX - r.left) / r.width);
+        guide.style.left = (frac * r.width) + 'px'; guide.style.display = 'block';
+        ghost.style.left = (ev.clientX - r0.width / 2) + 'px';
+        ghost.style.top = (ev.clientY - r0.height - 10) + 'px';
+      } else {
+        if (guide) guide.style.display = 'none';
+        ghost.style.left = (ev.clientX - ox) + 'px';
+        ghost.style.top = (ev.clientY - oy) + 'px';
+      }
+      if (z) { z.classList.add('over'); idx = indexAt(z, ev.clientX, ev.clientY); showSlot(z, idx); }
+      else clearSlot();
+    };
+    const end = ev => {
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', end);
+      window.removeEventListener('pointercancel', end);
+      if (over) over.classList.remove('over');
+      clearSlot();
+      document.body.classList.remove('dragging');
+      if (!ghost) {
+        // plain click: select without re-rendering, so double-click-to-rename still lands on the same element
+        selectedId = it.id;
+        document.querySelectorAll('.chip.selected').forEach(c => c.classList.remove('selected'));
+        el.classList.add('selected');
+        if (entry) layoutScale();   // the × button widens the bubble
+        return;
+      }
+      ghost.remove();
+      if (ev.type !== 'pointercancel' && over) {
+        unplace(it.id);
+        const key = over.dataset.zone;
+        if (key === 's') state.scale.pos[it.id] = Math.round(frac * 1000) / 1000;
+        else if (key && key.startsWith('t:')) {
+          const t = state.tiers.find(t => t.id === key.slice(2));
+          if (t) t.items.splice(idx, 0, it.id);
+        }
+      }
+      selectedId = it.id;
+      commit();
+    };
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', end);
+    window.addEventListener('pointercancel', end);
+  }
+
+  // ---------- share links ----------
+  function b64url(bytes) {
+    let s = ''; for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+    return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  }
+  function unb64url(str) {
+    const s = atob(str.replace(/-/g, '+').replace(/_/g, '/'));
+    const b = new Uint8Array(s.length); for (let i = 0; i < s.length; i++) b[i] = s.charCodeAt(i); return b;
+  }
+  async function pipe(bytes, stream) {
+    return new Uint8Array(await new Response(new Blob([bytes]).stream().pipeThrough(stream)).arrayBuffer());
+  }
+  function compact() {
+    const ix = new Map(state.items.map((it, i) => [it.id, i]));
+    const map = ids => ids.filter(id => ix.has(id)).map(id => ix.get(id));
+    return { t: state.title, m: state.mode, i: state.items.map(it => it.text),
+      T: state.tiers.map(t => [t.label, t.color, map(t.items)]),
+      s: [state.scale.left, state.scale.right,
+        Object.entries(state.scale.pos).filter(([id]) => ix.has(id)).map(([id, x]) => [ix.get(id), Math.round(x * 1000)])] };
+  }
+  function expand(c) {
+    const s = blank();
+    s.title = String(c.t || '').slice(0, 80);
+    s.mode = c.m === 'scale' ? 'scale' : 'tiers';
+    s.items = (c.i || []).map(text => ({ id: uid(), text: String(text).slice(0, 40), color: s.nextColor++ % PALETTE.length }));
+    const ids = idxs => [...new Set((idxs || []).filter(i => Number.isInteger(i) && s.items[i]))].map(i => s.items[i].id);
+    if (Array.isArray(c.T)) {
+      const seen = new Set();
+      s.tiers = c.T.map((t, k) => ({ id: uid(), label: String(t[0] ?? '').slice(0, 40),
+        color: isColor(t[1]) ? t[1] : rampColors(c.T.length)[k],
+        items: ids(t[2]).filter(id => !seen.has(id) && seen.add(id)) }));
+    }
+    const sc = c.s || [];
+    s.scale = { left: String(sc[0] ?? 'Worst').slice(0, 60), right: String(sc[1] ?? 'Best').slice(0, 60), pos: {} };
+    for (const p of (Array.isArray(sc[2]) ? sc[2] : [])) {
+      if (Array.isArray(p) && Number.isInteger(p[0]) && s.items[p[0]] && Number.isFinite(+p[1]))
+        s.scale.pos[s.items[p[0]].id] = clamp(+p[1] / 1000);
+    }
+    return s;
+  }
+  async function encode() {
+    const bytes = new TextEncoder().encode(JSON.stringify(compact()));
+    if ('CompressionStream' in window) return 'z' + b64url(await pipe(bytes, new CompressionStream('deflate-raw')));
+    return 'j' + b64url(bytes);
+  }
+  async function decode(str) {
+    const kind = str[0], bytes = unb64url(str.slice(1));
+    const raw = kind === 'z' ? await pipe(bytes, new DecompressionStream('deflate-raw')) : bytes;
+    return expand(JSON.parse(new TextDecoder().decode(raw)));
+  }
+  async function copyLink() {
+    const url = location.origin + location.pathname + '#c=' + await encode();
+    try { await navigator.clipboard.writeText(url); toast('Link copied'); }
+    catch { prompt('Copy this link:', url); }
+  }
+  async function loadFromHash() {
+    const m = location.hash.match(/^#c=(.+)$/);
+    if (!m) return;
+    try {
+      const incoming = await decode(m[1]);
+      const hadOwn = state.items.length || state.title;
+      if (hadOwn) localStorage.setItem(BACKUP_KEY, JSON.stringify(state));
+      state = incoming;
+      history.replaceState(null, '', location.pathname);
+      commit();
+      if (hadOwn) toast('Opened a shared list.', 'Restore my old list', restoreBackup, 8000);
+    } catch (err) {
+      console.error(err); toast('That link looks broken');
+    }
+  }
+  function restoreBackup() {
+    const b = localStorage.getItem(BACKUP_KEY);
+    if (!b) return;
+    state = JSON.parse(b); localStorage.removeItem(BACKUP_KEY); commit(); toast('Restored');
+  }
+
+  // ---------- image export ----------
+  const EXPORT_THEMES = {
+    light: { bg: '#ffffff', ink: '#1f2328', muted: '#6b6f78', row: '#f4f3ef', border: '#e5e3dc', shadow: 'rgba(0,0,0,.15)' },
+    dark:  { bg: '#1f2125', ink: '#ecebe7', muted: '#9a9ca3', row: '#2a2c31', border: '#3a3d44', shadow: 'rgba(0,0,0,.4)' },
+  };
+  const EXPORT_KEY = 'tier-list-export-theme';
+  function exportTheme() { return EXPORT_THEMES[localStorage.getItem(EXPORT_KEY)] || EXPORT_THEMES.light; }
+  const font = (w, px) => `${w} ${px}px ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif`;
+  const CH = 56, CPX = 22, CGAP = 12, CFS = 30, CMAXW = 560;
+
+  function fitText(g, text, maxW) {
+    if (g.measureText(text).width <= maxW) return text;
+    let t = text;
+    while (t.length > 1 && g.measureText(t + '…').width > maxW) t = t.slice(0, -1);
+    return t + '…';
+  }
+  function chipW(g, text) { return Math.min(g.measureText(text).width, CMAXW) + CPX * 2; }
+  function drawChip(g, T, it, x, y) {
+    const text = fitText(g, it.text, CMAXW);
+    const w = g.measureText(text).width + CPX * 2;
+    g.save();
+    g.shadowColor = T.shadow; g.shadowBlur = 5; g.shadowOffsetY = 2;
+    g.fillStyle = PALETTE[it.color % PALETTE.length];
+    roundRect(g, x, y, w, CH, CH / 2); g.fill();
+    g.restore();
+    g.strokeStyle = 'rgba(0,0,0,.12)'; g.lineWidth = 2; roundRect(g, x, y, w, CH, CH / 2); g.stroke();
+    g.fillStyle = '#1f2328'; g.textAlign = 'left'; g.textBaseline = 'middle';
+    g.fillText(text, x + CPX, y + CH / 2 + 1);
+    return w;
+  }
+  // Lay chips out left to right, wrapping at maxW. Returns positions and the number of lines.
+  function flow(g, items, maxW) {
+    const pos = []; let x = 0, line = 0;
+    for (const it of items) {
+      const w = chipW(g, it.text);
+      if (x > 0 && x + w > maxW) { x = 0; line++; }
+      pos.push({ it, x, line }); x += w + CGAP;
+    }
+    return { pos, lines: items.length ? line + 1 : 1 };
+  }
+
+  function drawCanvas() {
+    const T = exportTheme();
+    const m = document.createElement('canvas').getContext('2d');
+    const titleH = state.title ? 110 : 0;
+    const pad = 40;
+    let c, g;
+    const start = (W, H) => {
+      c = document.createElement('canvas'); c.width = W; c.height = H; g = c.getContext('2d');
+      g.fillStyle = T.bg; g.fillRect(0, 0, W, H);
+      if (state.title) {
+        g.fillStyle = T.ink; g.font = font(700, 56); g.textAlign = 'center'; g.textBaseline = 'middle';
+        g.fillText(state.title, W / 2, pad + titleH / 2 - 10, W - pad * 2);
+      }
+    };
+
+    if (state.mode === 'tiers') {
+      const W = 1600, labelW = 220, rowPad = 16, rowGap = 8;
+      const inner = W - pad * 2 - labelW - rowPad * 2;
+      m.font = font(600, CFS);
+      const rows = state.tiers.map(t => {
+        const items = t.items.map(item).filter(Boolean);
+        const f = flow(m, items, inner);
+        return { t, f, h: Math.max(120, f.lines * CH + (f.lines - 1) * CGAP + rowPad * 2) };
+      });
+      const H = pad * 2 + titleH + rows.reduce((s, r) => s + r.h, 0) + Math.max(0, rows.length - 1) * rowGap;
+      start(W, H);
+      let y = pad + titleH;
+      for (const r of rows) {
+        g.fillStyle = T.row; roundRect(g, pad, y, W - pad * 2, r.h, 14); g.fill();
+        g.save(); roundRect(g, pad, y, W - pad * 2, r.h, 14); g.clip();
+        g.fillStyle = r.t.color; g.fillRect(pad, y, labelW, r.h); g.restore();
+        // tier label, wrapped and shrunk to fit
+        let fs = 56, lines;
+        do { g.font = font(800, fs); lines = wrapLines(g, r.t.label, labelW - 30); fs -= 4; }
+        while (fs > 22 && (lines.length * fs * 1.15 > r.h - 20 || lines.some(l => g.measureText(l).width > labelW - 30)));
+        const lh = (fs + 4) * 1.15;
+        g.fillStyle = '#1f2328'; g.textAlign = 'center'; g.textBaseline = 'middle';
+        lines.forEach((l, i) => g.fillText(l, pad + labelW / 2, y + r.h / 2 + (i - (lines.length - 1) / 2) * lh, labelW - 20));
+        // chips, vertically centred in the row
+        g.font = font(600, CFS);
+        const blockH = r.f.lines * CH + (r.f.lines - 1) * CGAP;
+        const top = y + (r.h - blockH) / 2;
+        for (const p of r.f.pos) drawChip(g, T, p.it, pad + labelW + rowPad + p.x, top + p.line * (CH + CGAP));
+        y += r.h + rowGap;
+      }
+    } else {
+      // Same layout rules as on screen (assignLanes), at export scale.
+      const W = 1600, side = 90, inner = W - side * 2, stem = 40, laneGap = 14, lineArea = 40, labelH = 90;
+      m.font = font(600, CFS);
+      const entries = Object.entries(state.scale.pos).map(([id, x]) => ({ it: item(id), x })).filter(e => e.it)
+        .map(e => ({ ...e, px: e.x * inner, w: chipW(m, fitText(m, e.it.text, CMAXW)) }));
+      const lanes = Math.max(1, assignLanes(entries, inner, 10));
+      const H = pad + titleH + 30 + lanes * (CH + laneGap) + stem + lineArea + labelH + pad;
+      start(W, H);
+      const axisY = H - pad - labelH - lineArea / 2;
+      // ticks + line with arrowheads
+      g.strokeStyle = T.border; g.lineWidth = 2;
+      for (let i = 0; i <= 10; i++) {
+        const x = side + inner * i / 10, h = i === 5 ? 18 : 12;
+        g.beginPath(); g.moveTo(x, axisY - h); g.lineTo(x, axisY + h); g.stroke();
+      }
+      const lineCol = T === EXPORT_THEMES.dark ? '#c9cbd1' : '#2b2f36';
+      g.strokeStyle = lineCol; g.fillStyle = lineCol; g.lineWidth = 5;
+      g.beginPath(); g.moveTo(side - 10, axisY); g.lineTo(side + inner + 10, axisY); g.stroke();
+      const arrow = (x, d) => { g.beginPath(); g.moveTo(x + d * 22, axisY); g.lineTo(x, axisY - 13); g.lineTo(x, axisY + 13); g.closePath(); g.fill(); };
+      arrow(side - 10, -1); arrow(side + inner + 10, 1);
+      // stems, dots, bubbles
+      for (const e of entries) {
+        const color = PALETTE[e.it.color % PALETTE.length];
+        const top = axisY - stem - CH - e.lane * (CH + laneGap);
+        g.strokeStyle = color; g.lineWidth = 3;
+        g.beginPath(); g.moveTo(side + e.px, top + CH / 2); g.lineTo(side + e.px, axisY); g.stroke();
+        g.fillStyle = color; g.strokeStyle = T.bg; g.lineWidth = 4;
+        g.beginPath(); g.arc(side + e.px, axisY, 10, 0, Math.PI * 2); g.fill(); g.stroke();
+        g.font = font(600, CFS);
+        drawChip(g, T, e.it, side + e.left, top);
+      }
+      if (!entries.length) {
+        g.fillStyle = T.muted; g.font = font(500, 30); g.textAlign = 'center'; g.textBaseline = 'middle';
+        g.fillText('(nothing placed yet)', W / 2, axisY - 80);
+      }
+      // end labels
+      g.fillStyle = T.ink; g.font = font(700, 40); g.textBaseline = 'middle';
+      const ly = axisY + lineArea / 2 + labelH / 2;
+      g.textAlign = 'left'; g.fillText(state.scale.left || '', side - 20, ly, inner / 2 - 20);
+      g.textAlign = 'right'; g.fillText(state.scale.right || '', side + inner + 20, ly, inner / 2 - 20);
+    }
+    return c;
+  }
+  function wrapLines(g, text, maxW) {
+    const lines = []; let cur = '';
+    for (const word of String(text).split(/\s+/)) {
+      const tryLine = cur ? cur + ' ' + word : word;
+      if (g.measureText(tryLine).width <= maxW) { cur = tryLine; continue; }
+      if (cur) lines.push(cur);
+      cur = '';
+      for (const ch of word) {
+        if (g.measureText(cur + ch).width > maxW && cur) { lines.push(cur); cur = ''; }
+        cur += ch;
+      }
+    }
+    if (cur) lines.push(cur);
+    return lines.length ? lines : [''];
+  }
+  function roundRect(g, x, y, w, h, r) {
+    r = Math.min(r, w / 2, h / 2);
+    g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r);
+    g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath();
+  }
+  const toBlob = c => new Promise(res => c.toBlob(res, 'image/png'));
+  async function downloadPNG() {
+    const blob = await toBlob(drawCanvas());
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = (state.title || (state.mode === 'scale' ? 'ranking' : 'tier-list')).replace(/[^\w\- ]+/g, '').trim().replace(/\s+/g, '-').toLowerCase() + '.png';
+    a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  }
+  async function copyImage() {
+    try {
+      await navigator.clipboard.write([new ClipboardItem({ 'image/png': toBlob(drawCanvas()) })]);
+      toast('Image copied, paste it into your group chat');
+    } catch { toast('This browser can’t copy images, so it was downloaded instead'); downloadPNG(); }
+  }
+
+  // ---------- toast ----------
+  let toastTimer;
+  function toast(msg, actionLabel, action, ms = 2200) {
+    $('#toastMsg').textContent = msg;
+    const b = $('#toastAction');
+    b.style.display = actionLabel ? '' : 'none';
+    b.textContent = actionLabel || '';
+    b.onclick = () => { $('#toast').classList.remove('show'); action && action(); };
+    $('#toast').classList.add('show');
+    clearTimeout(toastTimer); toastTimer = setTimeout(() => $('#toast').classList.remove('show'), ms);
+  }
+
+  // ---------- wire up ----------
+  const presetSel = $('#presetSel');
+  PRESETS.forEach((p, i) => presetSel.append(new Option(p.name, i)));
+  presetSel.onchange = () => { const p = PRESETS[presetSel.value]; presetSel.value = ''; if (p) applyPreset(p); };
+
+  $('#addBtn').onclick = addNames;
+  $('#namesInput').addEventListener('keydown', e => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) addNames(); });
+  $('#unplaceBtn').onclick = () => {
+    if (state.mode === 'scale') state.scale.pos = {}; else state.tiers.forEach(t => t.items = []);
+    commit();
+  };
+  $('#title').addEventListener('input', e => { state.title = e.target.value; save(); });
+  for (const b of document.querySelectorAll('header .seg button')) b.onclick = () => { state.mode = b.dataset.mode; selectedId = null; commit(); };
+  $('#linkBtn').onclick = copyLink;
+
+  const dlg = $('#exportDlg');
+  function refreshPreview() { if (dlg.open) $('#exportPreview').src = drawCanvas().toDataURL('image/png'); }
+  $('#exportBtn').onclick = () => {
+    const theme = localStorage.getItem(EXPORT_KEY) === 'dark' ? 'dark' : 'light';
+    document.querySelector(`input[name="exportTheme"][value="${theme}"]`).checked = true;
+    dlg.showModal();
+    refreshPreview();
+  };
+  $('#exportClose').onclick = () => dlg.close();
+  dlg.addEventListener('click', e => { if (e.target === dlg) dlg.close(); });
+  document.querySelectorAll('input[name="exportTheme"]').forEach(r => r.onchange = () => {
+    try { localStorage.setItem(EXPORT_KEY, r.value); } catch {}
+    refreshPreview();
+  });
+  $('#pngBtn').onclick = () => { downloadPNG(); dlg.close(); };
+  $('#copyImgBtn').onclick = () => { dlg.close(); copyImage(); };
+  $('#newBtn').onclick = () => {
+    if (state.items.length && !confirm('Start a new list? The current one will be cleared.')) return;
+    const mode = state.mode;
+    state = blank(); state.mode = mode; selectedId = null; commit();
+  };
+  function deselect() {
+    selectedId = null;
+    document.querySelectorAll('.chip.selected').forEach(c => c.classList.remove('selected'));
+  }
+  document.addEventListener('keydown', e => {
+    if (e.target.matches('input, textarea, [contenteditable]')) return;
+    if ((e.key === 'Delete' || e.key === 'Backspace') && selectedId) { e.preventDefault(); removeItem(selectedId); }
+    if (e.key === 'Escape') deselect();
+  });
+  // Deselect without re-rendering, so clicking into a tier name keeps focus.
+  document.addEventListener('pointerdown', e => { if (!e.target.closest('.chip') && selectedId) deselect(); });
+  window.addEventListener('hashchange', loadFromHash);
+  window.addEventListener('resize', layoutScale);
+
+  render();
+  loadFromHash();
+})();
+</script>
+</body>
+</html>
